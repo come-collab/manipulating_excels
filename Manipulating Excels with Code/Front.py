@@ -1,9 +1,5 @@
 import streamlit as st
 import openpyxl
-from openpyxl.utils.dataframe import dataframe_to_rows
-from openpyxl import load_workbook
-import io
-import requests
 import os
 #Adding the credential for every member of the BDF
 
@@ -14,9 +10,40 @@ EXCEL_FILE_PATH = "shared_excel.xlsx"
 
 
 USER_CREDENTIALS = {
+    #Add to didier la possibilité de dire qui l'a kill aussi en super user
     "Didier" : "BDF123",
     "Côme": "",
     "Baptiste":"",
+    "Steve":"",
+    "Nico":"",
+    "Béa":"",
+    "Chris":"",
+    "Issam":"",
+    "Marco":"",
+    "Fanny":"",
+    "Guigui":"",
+    "Gégé":"",
+    "Lucas":"",
+    "Pat":"",
+    "Dylan":"",
+    "Maxime":"",
+    "Hugo W":"",
+    "Marine":"",
+    "Yohan":"",
+    "Sylvie P":"",
+    "Tony":"",
+    "Gérard":"",
+    "Chloé":"",
+    "Pierrot":"",
+    "Come":"",
+    "Baptiste":"",
+    "Flo":"",
+    "Sylvie B":"",
+    "Gaby":"",
+    "Greg":"",
+    #Session invité particuliere, tu choisis ton nom
+    "Invités":"",
+
 }
 
 st.set_page_config(page_title='Le Site de la BDF',page_icon="../logo_bdf.png")
