@@ -12,13 +12,12 @@ le premier des inscrits prend 10pts
 Premiere fonctionnalité Killer ensuite attribution des points
     Créer une page pour didier avec la possibilité de séléctionner les membres présents à la prochaine BDF
     
-    Possibilités de génerer le excel ou d'upload un existant
-    1er temps upload excel existant
-    prise d'information des participants
-    Killer et comptabilisation
-    deux composants :
-                    -  numéro de la bdf
-                    - membres présents
-                    - invités présents
+
+
+Flow :
+    Didier Upload le excel avec tout le monde : 
+        - Je me fais éliminer : je me connecte avec mon prénom 
+        - Je choisi dans le menu déroulant la personne m'ayant éliminé (menu actualiser avec les personnes présentes dans le excel)
+
 
 

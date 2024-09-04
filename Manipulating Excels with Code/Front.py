@@ -148,7 +148,7 @@ def general_page():
     players = df["Joueur"].dropna().unique()  # Remove any NaN values and get unique player names
     
     # Display a selectbox for the user to select a player
-    selected_player = st.selectbox("Select a Joueur", players)
+    selected_player = st.selectbox("Qui vous a éliminé ? ", players)
 
     # Display the selected player's information
     st.write(f"Information for the selected player: {selected_player}")
