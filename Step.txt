@@ -1,0 +1,13 @@
+Pour créer cette application nous avons besoin d'un excel de réference
+qui a pour structure les fichiers excel de la bdf.
+Soit un fichier excel pour chaque bdf.
+Les noms des différentes BDF peuvent être mis a jour.
+(acces personnalisé pour Didier)
+Site accessible par la BDF.
+
+Premiere lecture avec les membres de la bdf + invités.
+Seul les membres ont des kills comptabilisés 
+le premier des inscrits prend 10pts
+
+Premiere fonctionnalité Killer ensuite attribution des points
+
