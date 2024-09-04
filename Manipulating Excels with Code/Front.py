@@ -1,6 +1,10 @@
 import streamlit as st
 import openpyxl
 import os
+import pandas as pd
+
+
+
 #Adding the credential for every member of the BDF
 
 
@@ -48,6 +52,14 @@ USER_CREDENTIALS = {
 
 st.set_page_config(page_title='Le Site de la BDF',page_icon="../logo_bdf.png")
 st.image('../logo_bdf.png')
+
+
+# Function to load the Excel file and return a DataFrame
+def load_excel_to_dataframe(file_path):
+    if os.path.exists(file_path):
+        df = pd.read_excel(file_path, engine='openpyxl')  # Load the Excel file into a DataFrame
+        return df
+    return None
 
 def login():
     st.title("Login Page")
@@ -114,38 +126,36 @@ def user1_page():
 def general_page():
     st.title(f"Welcome, {st.session_state['username']}!")
     st.write("Gestion des kills")
-    if not os.path.exists(EXCEL_FILE_PATH):
-        st.error("No Excel file uploaded by the special user yet.")
-        return
     
-    # Load the workbook from the shared file path
-    workbook = load_excel_with_openpyxl(EXCEL_FILE_PATH)
-    
-    if workbook is None:
-        st.error("There was an issue loading the Excel file.")
+    # Check if the global Excel file exists
+    if not os.path.exists(PLAYER_LIST_FILE_PATH):
+        st.error("No Excel file uploaded by the admin yet.")
         return
 
-    # Let the user choose the sheet and cell to update
-    sheet_names = workbook.sheetnames
-    selected_sheet = st.selectbox("Select the sheet to modify", sheet_names)
+    # Load the Excel file into a DataFrame
+    df = load_excel_to_dataframe(PLAYER_LIST_FILE_PATH)
     
-    cell = st.text_input("Enter the cell to modify (e.g., A1):")
-    new_value = st.text_input("Enter the new value:")
+    if df is None:
+        st.error("Failed to load the Excel file.")
+        return
+    
+    # Check if the "Joueur" column exists
+    if "Joueur" not in df.columns:
+        st.error("The Excel file does not contain a 'Joueur' column.")
+        return
+    
+    # Extract the list of players from the "Joueur" column
+    players = df["Joueur"].dropna().unique()  # Remove any NaN values and get unique player names
+    
+    # Display a selectbox for the user to select a player
+    selected_player = st.selectbox("Select a Joueur", players)
 
-    if st.button("Apply Changes"):
-        if cell and new_value:
-            workbook = modify_excel(workbook, selected_sheet, cell, new_value)
-            save_excel(workbook, EXCEL_FILE_PATH)
-            st.success(f"Cell {cell} updated successfully with '{new_value}'!")
-
-    # Provide a download button for the modified Excel file
-    with open(EXCEL_FILE_PATH, "rb") as f:
-        st.download_button(
-            label="Download Updated Excel",
-            data=f,
-            file_name="modified_excel.xlsx",
-            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-        )
+    # Display the selected player's information
+    st.write(f"Information for the selected player: {selected_player}")
+    
+    # Display more data related to the selected player (you can expand this based on the Excel structure)
+    player_data = df[df["Joueur"] == selected_player]
+    st.dataframe(player_data)
 # Logout function
 def logout():
     st.session_state['logged_in'] = False
