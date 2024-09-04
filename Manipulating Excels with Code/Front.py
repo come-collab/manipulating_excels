@@ -7,8 +7,8 @@ import os
 
 # Define a directory to store the uploaded Excel file globally
 EXCEL_FILE_PATH = "shared_excel.xlsx"
-
-
+PLAYER_LIST_FILE_PATH = "List_of_Player.xlsx"
+#Membre de la bdf + Session Invité
 USER_CREDENTIALS = {
     #Add to didier la possibilité de dire qui l'a kill aussi en super user
     "Didier" : "BDF123",
@@ -84,20 +84,31 @@ def load_excel_with_openpyxl(file_url=None):
     
 
 # Function to display a specific page for user1
-def user1_page():
+def user1_page(): 
     st.title("Panneau Admin Didier")
     st.write("Dashboard personnalisé")
-    #Genere bdf 9, bdf 10 excel
 
-    uploaded_file = st.file_uploader("Upload your Excel file", type=["xlsx"])
-
-    if uploaded_file is not None:  # Check if the file is uploaded
-        # Save the uploaded file to the global path
-        with open(EXCEL_FILE_PATH, "wb") as f:
-            f.write(uploaded_file.getbuffer())  # Save the file's buffer
-        st.success("Excel file uploaded and saved globally!")
+    # Upload the first file (Excel to modify)
+    uploaded_file = st.file_uploader("Charge l'excel à compléter", type=["xlsx"], key="excel_upload")
+    if uploaded_file is not None:
+        st.session_state['uploaded_file'] = uploaded_file  # Store in session state temporarily
+        if st.button("Submit Excel File"):  # Submit button for the Excel file
+            with open(EXCEL_FILE_PATH, "wb") as f:
+                f.write(st.session_state['uploaded_file'].getbuffer())  # Save the Excel file
+            st.success("Excel file uploaded and saved globally!")
     else:
-        st.warning("Please upload an Excel file.")
+        st.info("Please upload the Excel file to be modified.")
+    
+    # Upload the second file (list of players)
+    uploaded_file_list_player = st.file_uploader("Upload la liste des joueurs", type=["xlsx"], key="player_list_upload")
+    if uploaded_file_list_player is not None:
+        st.session_state['uploaded_file_list_player'] = uploaded_file_list_player  # Store in session state temporarily
+        if st.button("Submit Player List"):  # Submit button for the Player List
+            with open(PLAYER_LIST_FILE_PATH, "wb") as f:
+                f.write(st.session_state['uploaded_file_list_player'].getbuffer())  # Save the List of Players file
+            st.success("List of players file uploaded and saved globally!")
+    else:
+        st.info("Please upload the list of players file.")
 
 # Function to display a general page for other users
 def general_page():
