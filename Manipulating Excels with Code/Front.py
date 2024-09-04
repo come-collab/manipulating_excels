@@ -1,6 +1,9 @@
 import streamlit as st
-
-
+import openpyxl
+from openpyxl.utils.dataframe import dataframe_to_rows
+from openpyxl import load_workbook
+import io
+import requests
 #Adding the credential for every member of the BDF
 
 USER_CREDENTIALS = {
@@ -28,12 +31,74 @@ def login():
         else:
             st.error("Invalid username or password")
 
+
+def modify_excel_with_openpyxl(workbook):
+    # Create a new sheet or modify an existing one
+    if "Modified Sheet" not in workbook.sheetnames:
+        worksheet = workbook.create_sheet(title="Modified Sheet")
+    else:
+        worksheet = workbook["Modified Sheet"]
+
+    # Add some data into the new sheet (example modification)
+    worksheet["A1"] = "New Data"
+    worksheet["A2"] = "More Data"
+
+    # Example of modifying an existing sheet (optional)
+    if "Sheet1" in workbook.sheetnames:
+        existing_sheet = workbook["Sheet1"]
+        existing_sheet["B1"] = "Modified Value"
+    
+    return workbook
+
+# Function to load the Excel file using openpyxl
+def load_excel_with_openpyxl(uploaded_file=None, file_url=None):
+    if uploaded_file:
+        # Read uploaded file
+        workbook = load_workbook(uploaded_file)
+        return workbook
+    elif file_url:
+        # Download file from the provided URL
+        response = requests.get(file_url)
+        file_bytes = io.BytesIO(response.content)
+        workbook = load_workbook(file_bytes)
+        return workbook
+    else:
+        return None
+    
+
 # Function to display a specific page for user1
 def user1_page():
-    st.title("Bonjour, Didier")
-    st.write("This is your personalized dashboard.")
-    # Add user-specific content here
-    st.write("You can access exclusive features as Didier.")
+    st.title("Panneau Admin Didier")
+    st.write("Dashboard personnalisé")
+    #Genere bdf 9, bdf 10 excel
+    uploaded_file = st.file_uploader("Upload your Excel file", type=["xlsx"])
+    # Text input to allow users to provide a URL
+    file_url = st.text_input("Or enter the link to your Excel file")
+
+    # Load the Excel file using openpyxl
+    workbook = load_excel_with_openpyxl(uploaded_file, file_url)
+
+    if workbook is not None:
+        st.write("Original Excel File Loaded Successfully")
+
+        # Modify the Excel file using openpyxl
+        modified_workbook = modify_excel_with_openpyxl(workbook)
+
+        # Save modified workbook to BytesIO object
+        output = io.BytesIO()
+        modified_workbook.save(output)
+        output.seek(0)  # Reset the pointer to the beginning of the stream
+
+        # Download modified Excel file
+        st.download_button(
+            label="Download Modified Excel",
+            data=output,
+            file_name="modified_excel.xlsx",
+            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        )
+    else:
+        st.write("Please upload an Excel file or provide a link.")
+
 
 # Function to display a general page for other users
 def general_page():
