@@ -2,7 +2,7 @@ import streamlit as st
 import openpyxl
 import os
 import pandas as pd
-
+import datetime
 
 
 #Adding the credential for every member of the BDF
@@ -60,6 +60,23 @@ def load_excel_to_dataframe(file_path):
         df = pd.read_excel(file_path, engine='openpyxl')  # Load the Excel file into a DataFrame
         return df
     return None
+
+
+def load_excel_to_dataframe_2(file_path):
+    try:
+        # Skip the first row and use the second row as the header
+        df = pd.read_excel(file_path, header=1)
+        return df
+    except Exception as e:
+        st.error(f"Error loading Excel file: {e}")
+        return None
+
+def save_dataframe_to_excel(file_path, df):
+    try:
+        df.to_excel(file_path, index=False)
+    except Exception as e:
+        st.error(f"Error saving Excel file: {e}")
+
 
 def login():
     st.title("Login Page")
@@ -127,35 +144,67 @@ def general_page():
     st.title(f"Welcome, {st.session_state['username']}!")
     st.write("Gestion des kills")
     
-    # Check if the global Excel file exists
+    # Check if the PLAYER_LIST file exists
     if not os.path.exists(PLAYER_LIST_FILE_PATH):
-        st.error("No Excel file uploaded by the admin yet.")
+        st.error("No PLAYER_LIST Excel file uploaded by the admin yet.")
         return
 
-    # Load the Excel file into a DataFrame
-    df = load_excel_to_dataframe(PLAYER_LIST_FILE_PATH)
+    # Load the PLAYER_LIST Excel file to display the list of players
+    player_df = load_excel_to_dataframe(PLAYER_LIST_FILE_PATH)
     
-    if df is None:
-        st.error("Failed to load the Excel file.")
+    if player_df is None:
+        st.error("Failed to load the PLAYER_LIST Excel file.")
         return
     
-    # Check if the "Joueur" column exists
-    if "Joueur" not in df.columns:
-        st.error("The Excel file does not contain a 'Joueur' column.")
+    # Check if the "Joueur" column exists in PLAYER_LIST
+    if "Joueur" not in player_df.columns:
+        st.error("The PLAYER_LIST file does not contain a 'Joueur' column.")
         return
     
-    # Extract the list of players from the "Joueur" column
-    players = df["Joueur"].dropna().unique()  # Remove any NaN values and get unique player names
+    # Extract the list of players from the "Joueur" column in PLAYER_LIST
+    players = player_df["Joueur"].dropna().unique()  # Remove any NaN values and get unique player names
     
-    # Display a selectbox for the user to select a player
+    # Display a selectbox for the user to select the player who eliminated them
     selected_player = st.selectbox("Qui vous a éliminé ? ", players)
-
-    # Display the selected player's information
-    st.write(f"Information for the selected player: {selected_player}")
     
-    # Display more data related to the selected player (you can expand this based on the Excel structure)
-    player_data = df[df["Joueur"] == selected_player]
-    st.dataframe(player_data)
+    # Get the current user from session state
+    current_user = st.session_state['username']
+    
+    # Load the EXCEL_FILE_PATH which will be updated with elimination information
+    if not os.path.exists(EXCEL_FILE_PATH):
+        st.error("No elimination Excel file found.")
+        return
+    
+    elimination_df = load_excel_to_dataframe_2(EXCEL_FILE_PATH)
+    
+    if elimination_df is None:
+        st.error("Failed to load the elimination Excel file.")
+        return
+    
+    # Normalize column names by stripping whitespace
+    elimination_df.columns = elimination_df.columns.str.strip()
+
+    # Check if the necessary columns exist in the elimination Excel file
+    required_columns = ["Classement", "Joueur", "Heure", "Killer", "Points"]
+    if not all(column in elimination_df.columns for column in required_columns):
+        st.error(f"The elimination Excel file does not contain the necessary columns: {required_columns}")
+        st.write(f"Found columns: {elimination_df.columns.tolist()}")
+        return
+
+    # Handle user elimination logic
+    if st.button("Confirmer l'élimination"):
+        # Get the total number of players from the elimination Excel file
+        total_players = elimination_df.shape[0]
+
+        # Update the current user information in the elimination Excel file
+        elimination_df.loc[elimination_df["Joueur"] == current_user, "Classement"] = total_players
+        elimination_df.loc[elimination_df["Joueur"] == current_user, "Heure"] = datetime.now().strftime("%H:%M:%S")
+        elimination_df.loc[elimination_df["Joueur"] == current_user, "Killer"] = selected_player
+
+        # Save the updated DataFrame back to the elimination Excel file
+        save_dataframe_to_excel(EXCEL_FILE_PATH, elimination_df)
+        
+        st.success(f"{current_user} has been updated in the elimination ranking!")
 # Logout function
 def logout():
     st.session_state['logged_in'] = False
