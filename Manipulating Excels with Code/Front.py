@@ -3,7 +3,7 @@ import openpyxl
 import os
 import pandas as pd
 import datetime
-
+from collections import Counter
 
 #Adding the credential for every member of the BDF
 
@@ -163,24 +163,27 @@ def general_page():
     
     # Extract the list of players from the "Joueur" column in PLAYER_LIST
     players = player_df["Joueur"].dropna().unique()  # Remove any NaN values and get unique player names
-    
+    # Count the number of players
+    # Count the number of players
+    number_of_players = Counter(players)
+
     # Display a selectbox for the user to select the player who eliminated them
-    selected_player = st.selectbox("Qui vous a éliminé ? ", players)
-    
+    selected_player = st.selectbox("Qui vous a éliminé ?", players)
+
     # Get the current user from session state
     current_user = st.session_state['username']
-    
+
     # Load the EXCEL_FILE_PATH which will be updated with elimination information
     if not os.path.exists(EXCEL_FILE_PATH):
         st.error("No elimination Excel file found.")
         return
-    
+
     elimination_df = load_excel_to_dataframe_2(EXCEL_FILE_PATH)
-    
+
     if elimination_df is None:
         st.error("Failed to load the elimination Excel file.")
         return
-    
+
     # Normalize column names by stripping whitespace
     elimination_df.columns = elimination_df.columns.str.strip()
 
@@ -193,17 +196,33 @@ def general_page():
 
     # Handle user elimination logic
     if st.button("Confirmer l'élimination"):
-        # Get the total number of players from the elimination Excel file
-        total_players = elimination_df.shape[0]
+        # Calculate the correct row based on the number of players plus 2 (for the permanent lines)
+        total_players = elimination_df.shape[0] - 2
+        new_row_index = total_players + 2
+        
+        # Prepare the new row with the current user's information
+        new_row = pd.DataFrame({
+            "Classement": [new_row_index],
+            "Joueur": [current_user],
+            "Heure": [pd.Timestamp.now()],
+            "Killer": [selected_player],
+            "Points": [None]  # Add 'Points' value if needed, otherwise keep it as None
+        })
 
-        # Update the current user information in the elimination Excel file
-        elimination_df.loc[elimination_df["Joueur"] == current_user, "Classement"] = total_players
-        elimination_df.loc[elimination_df["Joueur"] == current_user, "Heure"] = pd.Timestamp.now()
-        elimination_df.loc[elimination_df["Joueur"] == current_user, "Killer"] = selected_player
+        if new_row is not None:
+            
+            # Concatenate the new row to the existing DataFrame
+            elimination_df = pd.concat([elimination_df, new_row], ignore_index=True)
+
+            # Save the updated DataFrame back to the elimination Excel file
+            save_dataframe_to_excel(EXCEL_FILE_PATH, elimination_df)
+
+            st.success(f"{current_user} a bien mis à jour son élimination")
+        # Concatenate the new row to the existing DataFrame
+        elimination_df = pd.concat([elimination_df, new_row], ignore_index=True)
 
         # Save the updated DataFrame back to the elimination Excel file
         save_dataframe_to_excel(EXCEL_FILE_PATH, elimination_df)
-        
         st.success(f"{current_user} a bien mis à jour son élimination")
 # Logout function
 def logout():
