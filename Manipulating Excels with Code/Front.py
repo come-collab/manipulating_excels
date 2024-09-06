@@ -198,13 +198,13 @@ def general_page():
 
         # Update the current user information in the elimination Excel file
         elimination_df.loc[elimination_df["Joueur"] == current_user, "Classement"] = total_players
-        elimination_df.loc[elimination_df["Joueur"] == current_user, "Heure"] = datetime.now().strftime("%H:%M:%S")
+        elimination_df.loc[elimination_df["Joueur"] == current_user, "Heure"] = pd.Timestamp.now()
         elimination_df.loc[elimination_df["Joueur"] == current_user, "Killer"] = selected_player
 
         # Save the updated DataFrame back to the elimination Excel file
         save_dataframe_to_excel(EXCEL_FILE_PATH, elimination_df)
         
-        st.success(f"{current_user} has been updated in the elimination ranking!")
+        st.success(f"{current_user} a bien mis à jour son élimination")
 # Logout function
 def logout():
     st.session_state['logged_in'] = False
