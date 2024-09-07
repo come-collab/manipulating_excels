@@ -1,6 +1,6 @@
 import streamlit as st
 import openpyxl
-from openpyxl import workbook
+from openpyxl import load_workbook
 import os
 import pandas as pd
 import datetime
@@ -16,7 +16,7 @@ PLAYER_LIST_FILE_PATH = "List_of_Player.xlsx"
 #Membre de la bdf + Session Invité
 USER_CREDENTIALS = {
     #Add to didier la possibilité de dire qui l'a kill aussi en super user
-    "Didier" : "BDF123",
+    "Didier" : "",
     "Côme": "",
     "Baptiste":"",
     "Steve":"",
@@ -65,18 +65,34 @@ def load_excel_to_dataframe(file_path):
 
 def load_excel_to_dataframe_2(file_path):
     try:
-        df = pd.read_excel(file_path)
+        df = pd.read_excel(file_path,skiprows=[0])
         return df
     except Exception as e:
         st.error(f"Error loading Excel file: {e}")
         return None
+    
 
-def save_dataframe_to_excel(file_path, df):
+def save_dataframe_to_excel(file_path, df, top_row_text="Classement des éliminés"):
     try:
+        # First, save the DataFrame to Excel
         df.to_excel(file_path, index=False)
+
+        # Now, open the workbook and add the top row
+        wb = load_workbook(file_path)
+        ws = wb.active
+        
+        # Insert a new row at the top
+        ws.insert_rows(1)
+        
+        # Add the text to cell A1 of the new row
+        ws['A1'] = top_row_text
+
+        # Save the modified workbook
+        wb.save(file_path)
+        
+        st.success("Excel file saved successfully with top row inserted.")
     except Exception as e:
         st.error(f"Error saving Excel file: {e}")
-
 
 def login():
     st.title("Login Page")
@@ -178,20 +194,14 @@ def general_page():
         return
 
     elimination_df = load_excel_to_dataframe_2(EXCEL_FILE_PATH)
-    print("excel to dataframe :" ,elimination_df)
 
 
     if elimination_df is None:
         st.error("Failed to load the elimination Excel file.")
         return
-    
-   
-    #I want to have the second line of the excel file to be the header but I want to keep the first line as the first line
-    elimination_df = pd.concat([elimination_df.iloc[:1], elimination_df.iloc[1:].rename(columns=elimination_df.iloc[0])], ignore_index=True)
      # Normalize column names by stripping whitespace
     elimination_df.columns = elimination_df.columns.str.strip()
     
-    print("excel to dataframe :" ,elimination_df)
     # Check if the necessary columns exist in the elimination Excel file
     required_columns = ["Classement", "Joueur", "Heure", "Killer", "Points"]
     if not all(column in elimination_df.columns for column in required_columns):
@@ -213,10 +223,9 @@ def general_page():
             "Killer": [selected_player],
             "Points": [None]  # Add 'Points' value if needed, otherwise keep it as None
         })
-
-        # Append the new row after the first row (insert in row 2)
-        elimination_df = pd.concat([elimination_df.iloc[:1], new_row, elimination_df.iloc[1:]], ignore_index=True)
-
+        
+         # Concatenate the headline row, existing data (including the header), and new row
+        elimination_df = pd.concat([elimination_df, new_row], ignore_index=True)
         # Save the updated DataFrame back to the elimination Excel file
         save_dataframe_to_excel(EXCEL_FILE_PATH, elimination_df)
 
