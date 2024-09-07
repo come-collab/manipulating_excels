@@ -1,5 +1,6 @@
 import streamlit as st
 import openpyxl
+from openpyxl import workbook
 import os
 import pandas as pd
 import datetime
@@ -64,8 +65,7 @@ def load_excel_to_dataframe(file_path):
 
 def load_excel_to_dataframe_2(file_path):
     try:
-        # Skip the first row and use the second row as the header
-        df = pd.read_excel(file_path, header=1)
+        df = pd.read_excel(file_path)
         return df
     except Exception as e:
         st.error(f"Error loading Excel file: {e}")
@@ -164,7 +164,6 @@ def general_page():
     # Extract the list of players from the "Joueur" column in PLAYER_LIST
     players = player_df["Joueur"].dropna().unique()  # Remove any NaN values and get unique player names
     # Count the number of players
-    # Count the number of players
     number_of_players = Counter(players)
 
     # Display a selectbox for the user to select the player who eliminated them
@@ -179,14 +178,15 @@ def general_page():
         return
 
     elimination_df = load_excel_to_dataframe_2(EXCEL_FILE_PATH)
+    #print("excel to dataframe :" ,elimination_df)
+
 
     if elimination_df is None:
         st.error("Failed to load the elimination Excel file.")
         return
-
+    
     # Normalize column names by stripping whitespace
     elimination_df.columns = elimination_df.columns.str.strip()
-
     # Check if the necessary columns exist in the elimination Excel file
     required_columns = ["Classement", "Joueur", "Heure", "Killer", "Points"]
     if not all(column in elimination_df.columns for column in required_columns):
@@ -198,8 +198,8 @@ def general_page():
     if st.button("Confirmer l'élimination"):
         # Calculate the correct row based on the number of players plus 2 (for the permanent lines)
         total_players = elimination_df.shape[0] - 2
-        new_row_index = total_players + 2
-        
+        new_row_index = total_players + 2  # Calculate the ranking based on players
+
         # Prepare the new row with the current user's information
         new_row = pd.DataFrame({
             "Classement": [new_row_index],
@@ -209,20 +209,12 @@ def general_page():
             "Points": [None]  # Add 'Points' value if needed, otherwise keep it as None
         })
 
-        if new_row is not None:
-            
-            # Concatenate the new row to the existing DataFrame
-            elimination_df = pd.concat([elimination_df, new_row], ignore_index=True)
-
-            # Save the updated DataFrame back to the elimination Excel file
-            save_dataframe_to_excel(EXCEL_FILE_PATH, elimination_df)
-
-            st.success(f"{current_user} a bien mis à jour son élimination")
-        # Concatenate the new row to the existing DataFrame
-        elimination_df = pd.concat([elimination_df, new_row], ignore_index=True)
+        # Append the new row after the first row (insert in row 2)
+        elimination_df = pd.concat([elimination_df.iloc[:1], new_row, elimination_df.iloc[1:]], ignore_index=True)
 
         # Save the updated DataFrame back to the elimination Excel file
         save_dataframe_to_excel(EXCEL_FILE_PATH, elimination_df)
+
         st.success(f"{current_user} a bien mis à jour son élimination")
 # Logout function
 def logout():
