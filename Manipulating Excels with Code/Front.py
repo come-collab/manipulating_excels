@@ -178,15 +178,20 @@ def general_page():
         return
 
     elimination_df = load_excel_to_dataframe_2(EXCEL_FILE_PATH)
-    #print("excel to dataframe :" ,elimination_df)
+    print("excel to dataframe :" ,elimination_df)
 
 
     if elimination_df is None:
         st.error("Failed to load the elimination Excel file.")
         return
     
-    # Normalize column names by stripping whitespace
+   
+    #I want to have the second line of the excel file to be the header but I want to keep the first line as the first line
+    elimination_df = pd.concat([elimination_df.iloc[:1], elimination_df.iloc[1:].rename(columns=elimination_df.iloc[0])], ignore_index=True)
+     # Normalize column names by stripping whitespace
     elimination_df.columns = elimination_df.columns.str.strip()
+    
+    print("excel to dataframe :" ,elimination_df)
     # Check if the necessary columns exist in the elimination Excel file
     required_columns = ["Classement", "Joueur", "Heure", "Killer", "Points"]
     if not all(column in elimination_df.columns for column in required_columns):
