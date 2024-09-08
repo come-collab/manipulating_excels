@@ -4,7 +4,7 @@ from openpyxl import load_workbook
 import os
 import pandas as pd
 from collections import Counter
-
+from datetime import datetime
 #Adding the credential for every member of the BDF
 
 
@@ -243,22 +243,32 @@ def general_page():
         # Find the corresponding Classement value for this position
         new_classement = elimination_df.loc[last_empty_row, 'Classement']
 
+        # Get the current time
+        current_time = datetime.now().strftime("%H:%M")
+
         # Prepare the new row with the current user's information
         new_row = pd.DataFrame({
             "Classement": [new_classement],
             "Joueur": [current_user],
-            "Heure": [pd.Timestamp.now().strftime("%H:%M")],
+            "Heure": [current_time],
             "Killer": [selected_player],
             "Points": [None]  # Add 'Points' value if needed, otherwise keep it as None
         })
 
-        # Insert the new row at the last empty position
-        elimination_df.loc[last_empty_row] = new_row.iloc[0]
+        # Replace the following line:
+        # elimination_df.loc[last_empty_row] = new_row.iloc[0]
+        
+        # With these lines:
+        for column in new_row.columns:
+            elimination_df.at[last_empty_row, column] = new_row.at[0, column]
+
+        print("new_row", new_row)
+        print("elimination_df", elimination_df)
 
         # Save the updated DataFrame back to the elimination Excel file
         save_dataframe_to_excel(EXCEL_FILE_PATH, elimination_df)
 
-        st.success(f"{current_user} a bien mis à jour son élimination (Classement: {new_classement})")
+        st.success(f"{current_user} a bien mis à jour son élimination (Classement: {new_classement}, Heure: {current_time})")
 
 # Logout function
 def logout():
