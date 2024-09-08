@@ -3,7 +3,6 @@ import openpyxl
 from openpyxl import load_workbook
 import os
 import pandas as pd
-import datetime
 from collections import Counter
 
 #Adding the credential for every member of the BDF
@@ -72,7 +71,7 @@ def load_excel_to_dataframe_2(file_path):
         return None
     
 
-def save_dataframe_to_excel(file_path, df, top_row_text="Classement des éliminés"):
+def save_dataframe_to_excel(file_path, df, top_row_text="BDF Edition 9 "):
     try:
         # First, save the DataFrame to Excel
         df.to_excel(file_path, index=False)
@@ -97,6 +96,7 @@ def save_dataframe_to_excel(file_path, df, top_row_text="Classement des élimin�
 def login():
     st.title("Login Page")
     username = st.text_input("Utilisateur")
+
     password = st.text_input("Mot de passe", type="password")
     login_button = st.button("Connexion")
 
@@ -145,19 +145,38 @@ def user1_page():
         st.info("Please upload the Excel file to be modified.")
     
     # Upload the second file (list of players)
+   # Upload the second file (list of players)
     uploaded_file_list_player = st.file_uploader("Upload la liste des joueurs", type=["xlsx"], key="player_list_upload")
     if uploaded_file_list_player is not None:
-        st.session_state['uploaded_file_list_player'] = uploaded_file_list_player  # Store in session state temporarily
-        if st.button("Submit Player List"):  # Submit button for the Player List
+        st.session_state['uploaded_file_list_player'] = uploaded_file_list_player
+        if st.button("Submit Player List"):
             with open(PLAYER_LIST_FILE_PATH, "wb") as f:
-                f.write(st.session_state['uploaded_file_list_player'].getbuffer())  # Save the List of Players file
+                f.write(st.session_state['uploaded_file_list_player'].getbuffer())
             st.success("List of players file uploaded and saved globally!")
+            
+            # Load the player list and the shared Excel file
+            player_df = load_excel_to_dataframe(PLAYER_LIST_FILE_PATH)
+            shared_df = load_excel_to_dataframe_2(EXCEL_FILE_PATH)
+            
+            if player_df is not None and shared_df is not None:
+                # Get the number of players
+                num_players = len(player_df)
+                
+                # Update the Classement column
+                shared_df['Classement'] = range(1, num_players + 1)
+                
+                # Save the updated shared Excel file
+                save_dataframe_to_excel(EXCEL_FILE_PATH, shared_df)
+                
+                st.success(f"Classement column updated with numbers 1 to {num_players}")
+            else:
+                st.error("Failed to load player list or shared Excel file")
     else:
         st.info("Please upload the list of players file.")
 
 # Function to display a general page for other users
 def general_page():
-    st.title(f"Welcome, {st.session_state['username']}!")
+    st.title(f"Salut, {st.session_state['username']}!")
     st.write("Gestion des kills")
     
     # Check if the PLAYER_LIST file exists
@@ -219,7 +238,7 @@ def general_page():
         new_row = pd.DataFrame({
             "Classement": [new_row_index],
             "Joueur": [current_user],
-            "Heure": [pd.Timestamp.now()],
+            "Heure": [pd.Timestamp.now(year=None,month=None,day=None,second=None,microsecond=None)],
             "Killer": [selected_player],
             "Points": [None]  # Add 'Points' value if needed, otherwise keep it as None
         })
