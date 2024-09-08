@@ -238,7 +238,7 @@ def general_page():
         new_row = pd.DataFrame({
             "Classement": [new_row_index],
             "Joueur": [current_user],
-            "Heure": [pd.Timestamp.now(year=None,month=None,day=None,second=None,microsecond=None)],
+            "Heure": [pd.Timestamp.now().strftime("%H:%M")],
             "Killer": [selected_player],
             "Points": [None]  # Add 'Points' value if needed, otherwise keep it as None
         })
