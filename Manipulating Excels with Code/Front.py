@@ -230,25 +230,36 @@ def general_page():
 
     # Handle user elimination logic
     if st.button("Confirmer l'élimination"):
-        # Calculate the correct row based on the number of players plus 2 (for the permanent lines)
-        total_players = elimination_df.shape[0] - 2
-        new_row_index = total_players + 2  # Calculate the ranking based on players
+        # Load the current elimination data
+        elimination_df = load_excel_to_dataframe_2(EXCEL_FILE_PATH)
+
+        if elimination_df is None:
+            st.error("Failed to load the elimination Excel file.")
+            return
+
+        # Find the last empty row (where 'Joueur' is NaN)
+        last_empty_row = elimination_df['Joueur'].isna()[::-1].idxmax()
+
+        # Find the corresponding Classement value for this position
+        new_classement = elimination_df.loc[last_empty_row, 'Classement']
 
         # Prepare the new row with the current user's information
         new_row = pd.DataFrame({
-            "Classement": [new_row_index],
+            "Classement": [new_classement],
             "Joueur": [current_user],
             "Heure": [pd.Timestamp.now().strftime("%H:%M")],
             "Killer": [selected_player],
             "Points": [None]  # Add 'Points' value if needed, otherwise keep it as None
         })
-        
-         # Concatenate the headline row, existing data (including the header), and new row
-        elimination_df = pd.concat([elimination_df, new_row], ignore_index=True)
+
+        # Insert the new row at the last empty position
+        elimination_df.loc[last_empty_row] = new_row.iloc[0]
+
         # Save the updated DataFrame back to the elimination Excel file
         save_dataframe_to_excel(EXCEL_FILE_PATH, elimination_df)
 
-        st.success(f"{current_user} a bien mis à jour son élimination")
+        st.success(f"{current_user} a bien mis à jour son élimination (Classement: {new_classement})")
+
 # Logout function
 def logout():
     st.session_state['logged_in'] = False
