@@ -19,6 +19,7 @@ Flow :
         - Je me fais éliminer : je me connecte avec mon prénom 
         - Je choisi dans le menu déroulant la personne m'ayant éliminé (menu actualisé avec les personnes présentes dans le excel)
         - Je dois mettre d'abord charger la colonne classement avec le nombre total de joueurs. Le premier élminé vas a la derniere place et ainsi de suite.
+        -Gérer les invités
 
 
 

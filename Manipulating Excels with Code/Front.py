@@ -270,6 +270,57 @@ def general_page():
 
         st.success(f"{current_user} a bien mis à jour son élimination (Classement: {new_classement}, Heure: {current_time})")
 
+
+def invited_user_page():
+    st.title("Page Invités")
+    st.write("Sélectionnez votre nom et indiquez qui vous a éliminé")
+
+    # Load the player list
+    player_df = load_excel_to_dataframe(PLAYER_LIST_FILE_PATH)
+    
+    if player_df is None or "Joueur" not in player_df.columns:
+        st.error("Impossible de charger la liste des joueurs.")
+        return
+    
+    all_players = player_df["Joueur"].dropna().unique()
+    invited_players = [player for player in all_players if player not in USER_CREDENTIALS]
+
+    if not invited_players:
+        st.error("Aucun joueur invité disponible.")
+        return
+
+    # Let the invited user select their name
+    selected_name = st.selectbox("Sélectionnez votre nom", invited_players)
+
+    # Let the user select who eliminated them (from all players)
+    selected_killer = st.selectbox("Qui vous a éliminé ?", all_players)
+
+    if st.button("Confirmer l'élimination"):
+        elimination_df = load_excel_to_dataframe_2(EXCEL_FILE_PATH)
+
+        if elimination_df is None:
+            st.error("Impossible de charger le fichier d'élimination.")
+            return
+
+        last_empty_row = elimination_df['Joueur'].isna()[::-1].idxmax()
+        new_classement = elimination_df.loc[last_empty_row, 'Classement']
+        current_time = datetime.now().strftime("%H:%M")
+
+        new_row = pd.DataFrame({
+            "Classement": [new_classement],
+            "Joueur": [selected_name],
+            "Heure": [current_time],
+            "Killer": [selected_killer],
+            "Points": [None]
+        })
+
+        for column in new_row.columns:
+            elimination_df.at[last_empty_row, column] = new_row.at[0, column]
+
+        save_dataframe_to_excel(EXCEL_FILE_PATH, elimination_df)
+
+        st.success(f"{selected_name} a bien mis à jour son élimination (Classement: {new_classement}, Heure: {current_time})")
+
 # Logout function
 def logout():
     st.session_state['logged_in'] = False
@@ -280,6 +331,8 @@ def page_selector():
     # Check if the logged-in user is user1 or another user
     if st.session_state['username'] == "Didier":
         user1_page()  # Show specific content for user1
+    elif st.session_state['username'] == "Invités":
+        invited_user_page()
     else:
         general_page()  # Show general content for all other users
 
