@@ -143,7 +143,7 @@ def user1_page():
             st.success("Excel file uploaded and saved globally!")
     else:
         st.info("Please upload the Excel file to be modified.")
-    
+
     # Upload the second file (list of players)
    # Upload the second file (list of players)
     uploaded_file_list_player = st.file_uploader("Upload la liste des joueurs", type=["xlsx"], key="player_list_upload")
@@ -173,7 +173,47 @@ def user1_page():
                 st.error("Failed to load player list or shared Excel file")
     else:
         st.info("Please upload the list of players file.")
+            # Add a new section for Didier to specify his elimination
+    st.subheader("Gestion de votre élimination")
 
+    # Check if the PLAYER_LIST file exists
+    if not os.path.exists(PLAYER_LIST_FILE_PATH):
+        st.error("No PLAYER_LIST Excel file uploaded yet.")
+    else:
+        player_df = load_excel_to_dataframe(PLAYER_LIST_FILE_PATH)
+        
+        if player_df is not None and "Joueur" in player_df.columns:
+            players = player_df["Joueur"].dropna().unique()
+            
+            # Display a selectbox for Didier to select the player who eliminated him
+            selected_player = st.selectbox("Qui vous a éliminé ?", players)
+
+            if st.button("Confirmer votre élimination"):
+                elimination_df = load_excel_to_dataframe_2(EXCEL_FILE_PATH)
+
+                if elimination_df is not None:
+                    last_empty_row = elimination_df['Joueur'].isna()[::-1].idxmax()
+                    new_classement = elimination_df.loc[last_empty_row, 'Classement']
+                    current_time = datetime.now().strftime("%H:%M")
+
+                    new_row = pd.DataFrame({
+                        "Classement": [new_classement],
+                        "Joueur": ["Didier"],
+                        "Heure": [current_time],
+                        "Killer": [selected_player],
+                        "Points": [None]
+                    })
+
+                    for column in new_row.columns:
+                        elimination_df.at[last_empty_row, column] = new_row.at[0, column]
+
+                    save_dataframe_to_excel(EXCEL_FILE_PATH, elimination_df)
+
+                    st.success(f"Didier a bien mis à jour son élimination (Classement: {new_classement}, Heure: {current_time})")
+                else:
+                    st.error("Failed to load the elimination Excel file.")
+        else:
+            st.error("Failed to load the PLAYER_LIST Excel file or 'Joueur' column is missing.")
 # Function to display a general page for other users
 def general_page():
     st.title(f"Salut, {st.session_state['username']}!")
