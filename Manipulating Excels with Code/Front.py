@@ -92,6 +92,8 @@ def save_dataframe_to_excel(file_path, df, top_row_text="BDF Edition 9 "):
         st.success("Excel file saved successfully with top row inserted.")
     except Exception as e:
         st.error(f"Error saving Excel file: {e}")
+
+        
 def update_points(elimination_df):    
     # Define point allocation
     points = {1: 10, 2: 6, 3: 4, 4 : 2}

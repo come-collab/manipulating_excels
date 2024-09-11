@@ -22,7 +22,8 @@ Flow :
         -Gérer les invités
         --------------------------------------------------------------------
         - Créer le systeme de points (demander de l'aide pour le faire)
-        - ajouter l'option de modification 
+            - Créer la fonction disant que pour les invités les points ne sont pas comptabilisés
+        - ajouter l'option de modification
 
 
 
