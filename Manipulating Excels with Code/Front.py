@@ -92,6 +92,15 @@ def save_dataframe_to_excel(file_path, df, top_row_text="BDF Edition 9 "):
         st.success("Excel file saved successfully with top row inserted.")
     except Exception as e:
         st.error(f"Error saving Excel file: {e}")
+def update_points(elimination_df):    
+    # Define point allocation
+    points = {1: 10, 2: 6, 3: 4, 4 : 2}
+    
+    # Update Points column
+    elimination_df['Points'] = elimination_df['Classement'].map(lambda x: points.get(x, 0))
+    
+    return elimination_df
+
 
 def login():
     st.title("Login Page")
@@ -303,10 +312,11 @@ def general_page():
             elimination_df.at[last_empty_row, column] = new_row.at[0, column]
 
         print("new_row", new_row)
+        updated_df = update_points(elimination_df)
         print("elimination_df", elimination_df)
 
         # Save the updated DataFrame back to the elimination Excel file
-        save_dataframe_to_excel(EXCEL_FILE_PATH, elimination_df)
+        save_dataframe_to_excel(EXCEL_FILE_PATH, updated_df)
 
         st.success(f"{current_user} a bien mis à jour son élimination (Classement: {new_classement}, Heure: {current_time})")
 
