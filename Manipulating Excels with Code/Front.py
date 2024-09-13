@@ -80,7 +80,6 @@ def report_elimination(elimination_df, player_df, eliminated_player, killer):
     elimination_df.at[index, 'Heure'] = current_time
     elimination_df.at[index, 'Killer'] = killer
     elimination_df.at[index, 'Points'] = None  # Will be updated later
-
     # Check if only one player remains
     eliminated_players = elimination_df['Joueur'].dropna().unique()
     if len(eliminated_players) == total_players - 1:
@@ -147,14 +146,29 @@ def normalize_name(name):
 # Function to load the Excel file and return a DataFrame
 def load_excel_to_dataframe(file_path):
     if os.path.exists(file_path):
-        df = pd.read_excel(file_path, engine='openpyxl')  # Load the Excel file into a DataFrame
+        df = pd.read_excel(file_path, engine='openpyxl')
+        # Standardize column names
+        df.columns = df.columns.str.strip()
+        # Remove duplicate columns
+        df = remove_duplicate_columns(df)
         return df
     return None
 
 
+def remove_duplicate_columns(df):
+    # Remove duplicate columns
+    df = df.loc[:, ~df.columns.duplicated()]
+    return df
+
 def load_excel_to_dataframe_2(file_path):
     try:
-        df = pd.read_excel(file_path,skiprows=[0])
+        df = pd.read_excel(file_path, skiprows=[0])
+        # Standardize column names
+        df.columns = df.columns.str.strip()
+        # Remove duplicate columns
+        df = remove_duplicate_columns(df)
+        # Debug: Print DataFrame columns after loading
+        print("Columns after loading from Excel:", df.columns.tolist())
         return df
     except Exception as e:
         st.error(f"Error loading Excel file: {e}")
@@ -163,27 +177,26 @@ def load_excel_to_dataframe_2(file_path):
 
 def save_dataframe_to_excel(file_path, df, top_row_text="BDF Edition 9 "):
     try:
+        # Standardize column names
+        df.columns = df.columns.str.strip()
+        # Remove duplicate columns
+        df = remove_duplicate_columns(df)
+        # Debug: Print DataFrame columns before saving
+        print("Columns before saving to Excel:", df.columns.tolist())
         # First, save the DataFrame to Excel
         df.to_excel(file_path, index=False)
-
         # Now, open the workbook and add the top row
         wb = load_workbook(file_path)
         ws = wb.active
-        
         # Insert a new row at the top
         ws.insert_rows(1)
-        
         # Add the text to cell A1 of the new row
         ws['A1'] = top_row_text
-
         # Save the modified workbook
         wb.save(file_path)
-        
         st.success("Excel file saved successfully with top row inserted.")
     except Exception as e:
         st.error(f"Error saving Excel file: {e}")
-
-
 def is_credential_user(player_name):
     normalized_player_name = normalize_name(player_name)
     normalized_credentials = [normalize_name(name) for name in USER_CREDENTIALS.keys()]
@@ -263,7 +276,8 @@ def user1_page():
                 
                 # Update the Classement column
                 shared_df['Classement'] = range(1, num_players + 1)
-                
+                # Standardize column names
+                shared_df.columns = shared_df.columns.str.strip()
                 # Save the updated shared Excel file
                 save_dataframe_to_excel(EXCEL_FILE_PATH, shared_df)
                 
@@ -322,6 +336,8 @@ def user1_page():
                 # Update points
                 updated_df = update_points(elimination_df)
 
+                # Standardize column names
+                updated_df.columns = updated_df.columns.str.strip()
                 # Save the updated DataFrame
                 save_dataframe_to_excel(EXCEL_FILE_PATH, updated_df)
 
@@ -378,7 +394,8 @@ def general_page():
 
         # Update points
         updated_df = update_points(elimination_df)
-
+        # Standardize column names
+        updated_df.columns = updated_df.columns.str.strip()
         # Save the updated DataFrame
         save_dataframe_to_excel(EXCEL_FILE_PATH, updated_df)
 
@@ -434,6 +451,8 @@ def invited_user_page():
 
         # Update points
         updated_df = update_points(elimination_df)
+        # Standardize column names
+        updated_df.columns = updated_df.columns.str.strip()
         save_dataframe_to_excel(EXCEL_FILE_PATH, updated_df)
 
         st.success(message)
