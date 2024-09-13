@@ -99,6 +99,41 @@ def report_elimination(elimination_df, player_df, eliminated_player, killer):
 
     return (elimination_df, True, f"{eliminated_player} a été éliminé (Classement: {classement}, Heure: {current_time})")
 
+def update_points(elimination_df):
+    # Define point allocation based on ranking among credentialed users
+    points_mapping = {1: 10, 2: 6, 3: 4, 4: 2, 5: 1}
+    
+    # Ensure 'Classement' is integer
+    elimination_df['Classement'] = elimination_df['Classement'].astype(int)
+    
+    # Normalize 'Joueur' names in the DataFrame
+    elimination_df['Normalized_Joueur'] = elimination_df['Joueur'].apply(normalize_name)
+    
+    # Create a list of normalized credentialed user names
+    normalized_credentials = [normalize_name(name) for name in USER_CREDENTIALS.keys()]
+    
+    # Identify credentialed users
+    elimination_df['IsCredentialUser'] = elimination_df['Normalized_Joueur'].isin(normalized_credentials)
+    
+    # Sort elimination DataFrame by 'Classement'
+    elimination_df = elimination_df.sort_values('Classement').reset_index(drop=True)
+    
+    # Filter credentialed users and get their positions
+    credentialed_df = elimination_df[elimination_df['IsCredentialUser']].copy()
+    credentialed_df = credentialed_df.reset_index()  # Preserve original indices
+    
+    # Assign points based on position among credentialed users
+    credentialed_df['Credential_Rank'] = range(1, len(credentialed_df) + 1)
+    credentialed_df['Points'] = credentialed_df['Credential_Rank'].map(points_mapping).fillna(0).astype(int)
+    
+    # Update the 'Points' column in the main DataFrame
+    elimination_df['Points'] = 0  # Initialize all points to 0
+    elimination_df.loc[credentialed_df['index'], 'Points'] = credentialed_df['Points'].values
+    
+    # Drop temporary columns
+    elimination_df = elimination_df.drop(columns=['Normalized_Joueur', 'IsCredentialUser'])
+    
+    return elimination_df
 
 def normalize_name(name):
     if not isinstance(name, str):
@@ -153,43 +188,6 @@ def is_credential_user(player_name):
     normalized_player_name = normalize_name(player_name)
     normalized_credentials = [normalize_name(name) for name in USER_CREDENTIALS.keys()]
     return normalized_player_name in normalized_credentials
-
-
-def update_points(elimination_df):
-    # Define point allocation based on ranking among credentialed users
-    points_mapping = {1: 10, 2: 6, 3: 4, 4: 2, 5: 1}
-    
-    # Ensure 'Classement' is integer
-    elimination_df['Classement'] = elimination_df['Classement'].astype(int)
-    
-    # Normalize 'Joueur' names in the DataFrame
-    elimination_df['Normalized_Joueur'] = elimination_df['Joueur'].apply(normalize_name)
-    
-    # Create a list of normalized credentialed user names
-    normalized_credentials = [normalize_name(name) for name in USER_CREDENTIALS.keys()]
-    
-    # Identify credentialed users
-    elimination_df['IsCredentialUser'] = elimination_df['Normalized_Joueur'].isin(normalized_credentials)
-    
-    # Sort elimination DataFrame by 'Classement'
-    elimination_df = elimination_df.sort_values('Classement').reset_index(drop=True)
-    
-    # Filter credentialed users and get their positions
-    credentialed_df = elimination_df[elimination_df['IsCredentialUser']].copy()
-    credentialed_df = credentialed_df.reset_index()  # Preserve original indices
-    
-    # Assign points based on position among credentialed users
-    credentialed_df['Credential_Rank'] = range(1, len(credentialed_df) + 1)
-    credentialed_df['Points'] = credentialed_df['Credential_Rank'].map(points_mapping).fillna(0).astype(int)
-    
-    # Update the 'Points' column in the main DataFrame
-    elimination_df['Points'] = 0  # Initialize all points to 0
-    elimination_df.loc[credentialed_df['index'], 'Points'] = credentialed_df['Points'].values
-    
-    # Drop temporary columns
-    elimination_df = elimination_df.drop(columns=['Normalized_Joueur', 'IsCredentialUser'])
-    
-    return elimination_df
 
 def login():
     st.title("Login Page")
@@ -247,7 +245,6 @@ def user1_page():
         st.info("Please upload the Excel file to be modified.")
 
     # Upload the second file (list of players)
-   # Upload the second file (list of players)
     uploaded_file_list_player = st.file_uploader("Upload la liste des joueurs", type=["xlsx"], key="player_list_upload")
     if uploaded_file_list_player is not None:
         st.session_state['uploaded_file_list_player'] = uploaded_file_list_player
@@ -275,7 +272,8 @@ def user1_page():
                 st.error("Failed to load player list or shared Excel file")
     else:
         st.info("Please upload the list of players file.")
-            # Add a new section for Didier to specify his elimination
+
+    # Add a new section for Didier to specify his elimination
     st.subheader("Gestion de votre élimination")
 
     # Check if the PLAYER_LIST file exists
@@ -286,34 +284,48 @@ def user1_page():
         
         if player_df is not None and "Joueur" in player_df.columns:
             players = player_df["Joueur"].dropna().unique()
-            
+            total_players = len(players)
+
+            # Load the elimination DataFrame
+            elimination_df = load_excel_to_dataframe_2(EXCEL_FILE_PATH)
+            if elimination_df is None:
+                st.error("Failed to load the elimination Excel file.")
+                return
+
+            # Determine remaining players
+            eliminated_players = elimination_df['Joueur'].dropna().unique()
+            remaining_players = set(players) - set(eliminated_players) - {"Didier"}
+            remaining_players = list(remaining_players)
+
             # Display a selectbox for Didier to select the player who eliminated him
-            selected_player = st.selectbox("Qui vous a éliminé ?", players)
+            if remaining_players:
+                selected_player = st.selectbox("Qui vous a éliminé ?", remaining_players)
+            else:
+                st.info("Aucun joueur restant pour vous éliminer.")
+                return
 
             if st.button("Confirmer votre élimination"):
+                # Reload elimination_df in case it has been updated
                 elimination_df = load_excel_to_dataframe_2(EXCEL_FILE_PATH)
-
-                if elimination_df is not None:
-                    last_empty_row = elimination_df['Joueur'].isna()[::-1].idxmax()
-                    new_classement = elimination_df.loc[last_empty_row, 'Classement']
-                    current_time = datetime.now().strftime("%H:%M")
-
-                    new_row = pd.DataFrame({
-                        "Classement": [new_classement],
-                        "Joueur": ["Didier"],
-                        "Heure": [current_time],
-                        "Killer": [selected_player],
-                        "Points": [None]
-                    })
-
-                    for column in new_row.columns:
-                        elimination_df.at[last_empty_row, column] = new_row.at[0, column]
-
-                    save_dataframe_to_excel(EXCEL_FILE_PATH, elimination_df)
-
-                    st.success(f"Didier a bien mis à jour son élimination (Classement: {new_classement}, Heure: {current_time})")
-                else:
+                if elimination_df is None:
                     st.error("Failed to load the elimination Excel file.")
+                    return
+
+                # Use the report_elimination function
+                eliminated_player = "Didier"
+                elimination_df, success, message = report_elimination(elimination_df, player_df, eliminated_player, selected_player)
+                
+                if not success:
+                    st.warning(message)
+                    return
+
+                # Update points
+                updated_df = update_points(elimination_df)
+
+                # Save the updated DataFrame
+                save_dataframe_to_excel(EXCEL_FILE_PATH, updated_df)
+
+                st.success(message)
         else:
             st.error("Failed to load the PLAYER_LIST Excel file or 'Joueur' column is missing.")
 # Function to display a general page for other users
